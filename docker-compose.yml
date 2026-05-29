@@ -38,6 +38,10 @@ services:
 
   netmaker-ui:
     <<: *hardening
+    cap_add:                  # nginx starts as root, chowns its cache, drops to nginx
+      - CHOWN
+      - SETGID
+      - SETUID
     container_name: netmaker-ui
     image: gravitl/netmaker-ui:${NETMAKER_VERSION}
     depends_on:
@@ -51,6 +55,10 @@ services:
 
   mq:
     <<: *hardening
+    cap_add:                  # mosquitto starts as root, then drops to mosquitto user
+      - CHOWN
+      - SETGID
+      - SETUID
     container_name: mq
     image: eclipse-mosquitto:${MOSQUITTO_VERSION}
     command: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
