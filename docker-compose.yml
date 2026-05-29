@@ -73,6 +73,7 @@ services:
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+      TUNNEL_TRANSPORT_PROTOCOL: http2
     depends_on:
       - netmaker
       - netmaker-ui
