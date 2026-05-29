@@ -1,0 +1,87 @@
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  netmaker:
+    <<: *hardening
+    container_name: netmaker
+    image: gravitl/netmaker:${NETMAKER_VERSION}
+    depends_on:
+      - mq
+    environment:
+      SERVER_NAME: ${NM_DOMAIN}
+      SERVER_HTTP_HOST: api.${NM_DOMAIN}
+      API_PORT: "8081"
+      SERVER_API_CONN_STRING: api.${NM_DOMAIN}:443
+      SERVER_BROKER_ENDPOINT: ws://mq:1883          # internal
+      BROKER_ENDPOINT: wss://broker.${NM_DOMAIN}    # via tunnel
+      MQ_USERNAME: ${MQ_USERNAME}
+      MQ_PASSWORD: ${MQ_PASSWORD}
+      MASTER_KEY: ${MASTER_KEY}
+      CORS_ALLOWED_ORIGIN: https://dashboard.${NM_DOMAIN}
+      DISPLAY_KEYS: "on"
+      DATABASE: sqlite
+      VERBOSITY: "1"
+      HOST_NETWORK: "off"
+      MANAGE_IPTABLES: "off"
+      DNS_MODE: "off"
+    volumes:
+      - ./data/sqldata:/root/data
+    expose:
+      - "8081"
+    networks:
+      - internal
+
+  netmaker-ui:
+    <<: *hardening
+    container_name: netmaker-ui
+    image: gravitl/netmaker-ui:${NETMAKER_VERSION}
+    depends_on:
+      - netmaker
+    environment:
+      BACKEND_URL: https://api.${NM_DOMAIN}
+    expose:
+      - "80"
+    networks:
+      - internal
+
+  mq:
+    <<: *hardening
+    container_name: mq
+    image: eclipse-mosquitto:${MOSQUITTO_VERSION}
+    command: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./password.txt:/mosquitto/password.txt:ro
+      - ./data/mosquitto/data:/mosquitto/data
+      - ./data/mosquitto/log:/mosquitto/log
+    expose:
+      - "1883"
+      - "8883"
+    networks:
+      - internal
+
+  cloudflared:
+    <<: *hardening
+    container_name: cloudflared
+    image: cloudflare/cloudflared:${CLOUDFLARED_VERSION}
+    read_only: true
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - netmaker
+      - netmaker-ui
+      - mq
+    networks:
+      - internal
+      - egress
+
+networks:
+  internal:
+    internal: true   # no gateway: no internet or cross-network access
+  egress: {}
