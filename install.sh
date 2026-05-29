@@ -4,7 +4,7 @@
 set -eu
 
 REPO_URL="${REPO_URL:-https://github.com/ilgmars/netmaker-cloudflared.git}"
-TARGET_DIR="${TARGET_DIR:-$PWD/netmaker-cloudflared}"
+TARGET_DIR="${TARGET_DIR:-/opt/netmaker-cloudflared}"
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
@@ -143,9 +143,9 @@ Cloudflare Tunnel setup
 1. Create a tunnel.
 2. Choose "Cloudflared", name it, and copy the tunnel token it shows.
 3. Under the tunnel's Public Hostnames, add:
-     dashboard.$domain  ->  HTTP  netmaker-ui:80
-     api.$domain        ->  HTTP  netmaker:8081
-     broker.$domain     ->  HTTP  mq:8883
+     nm-dash.$domain    ->  HTTP  netmaker-ui:80
+     nm-api.$domain     ->  HTTP  netmaker:8081
+     nm-broker.$domain  ->  HTTP  mq:8883
    (DNS records are created automatically.)
 EOF
 
@@ -173,7 +173,7 @@ Done. .env and password.txt are ready (both git-ignored).
 Configured: domain=$domain, broker user=$mq_user
 
 Start the stack with:  docker compose up -d
-Then open:             https://dashboard.$domain
+Then open:             https://nm-dash.$domain
 EOF
 
 if confirm "Run 'docker compose up -d' now?"; then

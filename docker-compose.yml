@@ -14,15 +14,15 @@ services:
       - mq
     environment:
       SERVER_NAME: ${NM_DOMAIN}
-      SERVER_HTTP_HOST: api.${NM_DOMAIN}
+      SERVER_HTTP_HOST: nm-api.${NM_DOMAIN}
       API_PORT: "8081"
-      SERVER_API_CONN_STRING: api.${NM_DOMAIN}:443
-      SERVER_BROKER_ENDPOINT: ws://mq:1883          # internal
-      BROKER_ENDPOINT: wss://broker.${NM_DOMAIN}    # via tunnel
+      SERVER_API_CONN_STRING: nm-api.${NM_DOMAIN}:443
+      SERVER_BROKER_ENDPOINT: ws://mq:1883             # internal
+      BROKER_ENDPOINT: wss://nm-broker.${NM_DOMAIN}    # via tunnel
       MQ_USERNAME: ${MQ_USERNAME}
       MQ_PASSWORD: ${MQ_PASSWORD}
       MASTER_KEY: ${MASTER_KEY}
-      CORS_ALLOWED_ORIGIN: https://dashboard.${NM_DOMAIN}
+      CORS_ALLOWED_ORIGIN: https://nm-dash.${NM_DOMAIN}
       DISPLAY_KEYS: "on"
       DATABASE: sqlite
       VERBOSITY: "1"
@@ -43,7 +43,7 @@ services:
     depends_on:
       - netmaker
     environment:
-      BACKEND_URL: https://api.${NM_DOMAIN}
+      BACKEND_URL: https://nm-api.${NM_DOMAIN}
     expose:
       - "80"
     networks:
