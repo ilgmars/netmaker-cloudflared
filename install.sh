@@ -13,7 +13,7 @@ need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
 SUDO=""
 [ "$(id -u)" -eq 0 ] || SUDO="sudo"
 
-apt_get() { $SUDO DEBIAN_FRONTEND=noninteractive apt-get "$@"; }
+apt_get() { $SUDO env DEBIAN_FRONTEND=noninteractive apt-get "$@"; }
 
 # https://docs.docker.com/engine/install/ubuntu/
 install_docker() {
