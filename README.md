@@ -3,6 +3,11 @@ This is still a work in progress.
 This was written for use with Ubuntu 26.04.
 Netmaker control plane is behind a Cloudflare Tunnel. No direct, inbound ports on the host.
 
+Script collects the variables from user, then installs dependencies and starts the service. If CF allows connection, initial user is set up automatically, with credentials printed to the console and written to the installation dir.
+
+When creating the tunnel, initially, only one hostname can be added. Additional hostnames can be added when revisiting the connector settings.
+If CF gives you errors, check the container logs, with `docker stats` and `docker logs <container name>`.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ilgmars/netmaker-cloudflared/main/install.sh | sh
 ```
