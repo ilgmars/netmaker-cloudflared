@@ -171,13 +171,12 @@ cat <<EOF >/dev/tty
 Cloudflare Tunnel setup
 -----------------------
    Dashboard: https://one.dash.cloudflare.com/ -> Networks -> Tunnels
-1. Create a tunnel.
-2. Choose "Cloudflared", name it, and copy the tunnel token it shows.
+1. Networks > Connectors > Create Tunnel, make sure to save the api token.
+2. After the tunnel is created, go back to the tunnel view, to add more hostnames by clicking 3 dots, on the right of tunnel name and clicking "edit".
 3. Under the tunnel's Public Hostnames, add:
      nm-dash.$domain    ->  HTTP  netmaker-ui:80
      nm-api.$domain     ->  HTTP  netmaker:8081
      nm-broker.$domain  ->  HTTP  mq:8883
-   (DNS records are created automatically.)
 EOF
 
 token=$(get_kv TUNNEL_TOKEN)
@@ -227,3 +226,4 @@ create_admin
 
 echo "" >/dev/tty
 echo "Open https://nm-dash.$domain" >/dev/tty
+echo "Check the install dir to see the credentials" >/dev/tty
