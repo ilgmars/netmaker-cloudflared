@@ -55,10 +55,7 @@ services:
 
   mq:
     <<: *hardening
-    cap_add:                  # mosquitto starts as root, then drops to mosquitto user
-      - CHOWN
-      - SETGID
-      - SETUID
+    user: "1883:1883"         # run as mosquitto, not root
     container_name: mq
     image: eclipse-mosquitto:${MOSQUITTO_VERSION}
     command: ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]

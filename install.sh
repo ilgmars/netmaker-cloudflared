@@ -93,6 +93,47 @@ seed() {
   fi
 }
 
+# reach the API with no published ports, via the netmaker container's netns
+nm_curl() { $SUDO docker run --rm --network container:netmaker curlimages/curl:latest "$@" 2>/dev/null; }
+
+create_admin() {
+  _user=$(get_kv ADMIN_USERNAME); [ -n "$_user" ] || _user=admin
+  _user=$(ask "Admin username" "$_user")
+  set_kv ADMIN_USERNAME "$_user"
+  _pass=$(openssl rand -hex 16)
+
+  printf 'Waiting for the Netmaker API ' >/dev/tty
+  _i=0
+  while [ "$_i" -lt 60 ]; do
+    case "$(nm_curl -fs -m 5 http://localhost:8081/api/users/adm/hassuperadmin || true)" in
+      *true*)  echo " an admin already exists; leaving it unchanged." >/dev/tty; return 0 ;;
+      *false*) echo " ready." >/dev/tty; break ;;
+    esac
+    printf '.' >/dev/tty; _i=$((_i + 1)); sleep 2
+  done
+
+  _code=$(nm_curl -s -o /dev/null -w '%{http_code}' -m 10 -X POST \
+    -H 'Content-Type: application/json' \
+    -d "{\"username\":\"$_user\",\"user_name\":\"$_user\",\"password\":\"$_pass\"}" \
+    http://localhost:8081/api/users/adm/createsuperadmin || true)
+
+  if [ "$_code" = "200" ]; then
+    cat <<EOF >/dev/tty
+
+Admin account created; the instance is no longer open.
+  username: $_user
+  password: $_pass
+Save the password now -- it is not stored anywhere.
+EOF
+  else
+    cat <<EOF >/dev/tty
+
+Could not auto-create the admin (API returned: ${_code:-no response}).
+Open https://nm-dash.$domain and create it yourself right away.
+EOF
+  fi
+}
+
 ensure_deps
 
 if [ -f ./docker-compose.yml ] && [ -f ./.env.example ]; then
@@ -113,6 +154,7 @@ fi
 [ -f .env ] || { cp .env.example .env; chmod 600 .env; }
 
 mkdir -p data/sqldata data/mosquitto/data data/mosquitto/log
+$SUDO chown -R 1883:1883 data/mosquitto
 
 cat <<'EOF' >/dev/tty
 
@@ -166,6 +208,7 @@ echo "Writing password.txt ..."
 $SUDO docker run --rm -v "$PWD:/work" "eclipse-mosquitto:$mq_ver" \
   mosquitto_passwd -b -c /work/password.txt "$mq_user" "$mq_pass"
 $SUDO chmod 600 password.txt
+$SUDO chown 1883:1883 password.txt
 
 cat <<EOF >/dev/tty
 
@@ -178,4 +221,5 @@ EOF
 
 if confirm "Run 'docker compose up -d' now?"; then
   $SUDO docker compose up -d
+  create_admin
 fi
