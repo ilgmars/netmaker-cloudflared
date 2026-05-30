@@ -133,7 +133,7 @@ EOF
 
 ensure_deps
 
-if [ -f ./docker-compose.yml ] && [ -f ./.env.example ]; then
+if [ -f ./docker-compose.yaml ] && [ -f ./.env.example ]; then
   echo "Using repo in current directory: $PWD"
 else
   TARGET_DIR=$(ask "Install location" "$TARGET_DIR")
