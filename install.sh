@@ -97,9 +97,6 @@ seed() {
 nm_curl() { $SUDO docker run --rm --network container:netmaker curlimages/curl:latest "$@" 2>/dev/null; }
 
 create_admin() {
-  _user=$(get_kv ADMIN_USERNAME); [ -n "$_user" ] || _user=admin
-  _user=$(ask "Admin username" "$_user")
-  set_kv ADMIN_USERNAME "$_user"
   _pass=$(openssl rand -hex 16)
 
   printf 'Waiting for the Netmaker API ' >/dev/tty
@@ -114,22 +111,22 @@ create_admin() {
 
   _code=$(nm_curl -s -o /dev/null -w '%{http_code}' -m 10 -X POST \
     -H 'Content-Type: application/json' \
-    -d "{\"username\":\"$_user\",\"user_name\":\"$_user\",\"password\":\"$_pass\"}" \
+    -d "{\"username\":\"$admin_user\",\"user_name\":\"$admin_user\",\"password\":\"$_pass\"}" \
     http://localhost:8081/api/users/adm/createsuperadmin || true)
 
   if [ "$_code" = "200" ]; then
     cat <<EOF >/dev/tty
 
-Admin account created; the instance is no longer open.
-  username: $_user
+Admin account created:
+  username: $admin_user
   password: $_pass
-Save the password now -- it is not stored anywhere.
+Save the password now; it is not stored anywhere.
 EOF
   else
     cat <<EOF >/dev/tty
 
-Could not auto-create the admin (API returned: ${_code:-no response}).
-Open https://nm-dash.$domain and create it yourself right away.
+Could not create the admin automatically (API returned: ${_code:-no response}).
+Open https://nm-dash.$domain and create it yourself.
 EOF
   fi
 }
@@ -153,9 +150,6 @@ fi
 
 [ -f .env ] || { cp .env.example .env; chmod 600 .env; }
 
-mkdir -p data/sqldata data/mosquitto/data data/mosquitto/log
-$SUDO chown -R 1883:1883 data/mosquitto
-
 cat <<'EOF' >/dev/tty
 
 The base domain must be a zone you manage in Cloudflare.
@@ -171,11 +165,6 @@ while :; do
     *) break ;;
   esac
 done
-set_kv NM_DOMAIN "$domain"
-
-seed MASTER_KEY  openssl rand -hex 32
-seed MQ_PASSWORD openssl rand -hex 24
-[ -n "$(get_kv MQ_USERNAME)" ] || set_kv MQ_USERNAME netmaker
 
 cat <<EOF >/dev/tty
 
@@ -199,9 +188,32 @@ else
   token=$(ask "Paste tunnel token")
 fi
 [ -n "$token" ] || die "tunnel token is required"
-set_kv TUNNEL_TOKEN "$token"
 
-mq_user=$(get_kv MQ_USERNAME)
+admin_user=$(get_kv ADMIN_USERNAME); [ -n "$admin_user" ] || admin_user=admin
+admin_user=$(ask "Admin username" "$admin_user")
+
+mq_user=$(get_kv MQ_USERNAME); [ -n "$mq_user" ] || mq_user=netmaker
+
+cat <<EOF >/dev/tty
+
+Ready to install:
+  location:    $PWD
+  domain:      $domain
+  broker user: $mq_user
+  admin user:  $admin_user
+EOF
+confirm "Proceed?" || { echo "Aborted." >/dev/tty; exit 0; }
+
+set_kv NM_DOMAIN "$domain"
+set_kv TUNNEL_TOKEN "$token"
+set_kv ADMIN_USERNAME "$admin_user"
+set_kv MQ_USERNAME "$mq_user"
+seed MASTER_KEY  openssl rand -hex 32
+seed MQ_PASSWORD openssl rand -hex 24
+
+mkdir -p data/sqldata data/mosquitto/data data/mosquitto/log
+$SUDO chown -R 1883:1883 data/mosquitto
+
 mq_pass=$(get_kv MQ_PASSWORD)
 mq_ver=$(get_kv MOSQUITTO_VERSION); [ -n "$mq_ver" ] || mq_ver=2.0.20
 echo "Writing password.txt ..."
@@ -210,16 +222,8 @@ $SUDO docker run --rm -v "$PWD:/work" "eclipse-mosquitto:$mq_ver" \
 $SUDO chmod 600 password.txt
 $SUDO chown 1883:1883 password.txt
 
-cat <<EOF >/dev/tty
+$SUDO docker compose up -d
+create_admin
 
-Done. .env and password.txt are ready (both git-ignored).
-Configured: domain=$domain, broker user=$mq_user
-
-Start the stack with:  docker compose up -d
-Then open:             https://nm-dash.$domain
-EOF
-
-if confirm "Run 'docker compose up -d' now?"; then
-  $SUDO docker compose up -d
-  create_admin
-fi
+echo "" >/dev/tty
+echo "Open https://nm-dash.$domain" >/dev/tty
