@@ -1,7 +1,6 @@
 This is still a work in progress.
 
-This was written for use with Ubuntu 26.04.
-Netmaker control plane is behind a Cloudflare Tunnel. No direct, inbound ports on the host.
+This was written for use with Ubuntu 26.04 as a "one-click" script to deploy a self-hosted netmaker behind CloudFlare. No direct, inbound ports on the host.
 
 Script collects the variables from user, then generates credentials, installs dependencies and starts the services. If CF allows connection, initial user is set up automatically, with credentials printed to the console and written to the installation dir.
 
