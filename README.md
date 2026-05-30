@@ -6,6 +6,7 @@ Netmaker control plane is behind a Cloudflare Tunnel. No direct, inbound ports o
 Script collects the variables from user, then generates credentials, installs dependencies and starts the services. If CF allows connection, initial user is set up automatically, with credentials printed to the console and written to the installation dir.
 
 When creating the tunnel, initially, only one hostname can be added. Additional hostnames can be added when revisiting the connector settings.
+
 If CF gives you errors, check the container logs, with `docker stats` and `docker logs <container name>`.
 
 ```sh
