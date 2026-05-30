@@ -226,4 +226,6 @@ create_admin
 
 echo "" >/dev/tty
 echo "Open https://nm-dash.$domain" >/dev/tty
-echo "Check the install dir to see the credentials" >/dev/tty
+echo "Check the install dir to see more information" >/dev/tty
+echo "Consider enabling 2fa!" >/dev/tty
+
