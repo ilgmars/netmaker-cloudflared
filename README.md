@@ -1,5 +1,7 @@
 This is still a work in progress, do not use yet.
-Netmaker control plane behind a Cloudflare Tunnel. No inbound ports on the host.
+
+This was written for use with Ubuntu 26.04.
+Netmaker control plane is behind a Cloudflare Tunnel. No direct, inbound ports on the host.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ilgmars/netmaker-cloudflared/main/install.sh | sh
