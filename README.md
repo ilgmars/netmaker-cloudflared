@@ -1,4 +1,4 @@
-This is still a work in progress, do not use yet.
+This is still a work in progress.
 
 This was written for use with Ubuntu 26.04.
 Netmaker control plane is behind a Cloudflare Tunnel. No direct, inbound ports on the host.
