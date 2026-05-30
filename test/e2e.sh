@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# Brings up the stack (minus cloudflared, which needs a real Cloudflare
-# account) and checks the routes the tunnel proxies to, plus admin bootstrap.
+# Runs the stack without cloudflared (no Cloudflare account in CI) and checks it.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-PROJECT=nmcf
-NET="${PROJECT}_internal"
-export COMPOSE_PROJECT_NAME="$PROJECT"
+export COMPOSE_PROJECT_NAME=nmcf
 
 # shellcheck disable=SC1091
 . ./.env.example
@@ -45,16 +42,15 @@ trap cleanup EXIT
 
 docker compose up -d netmaker netmaker-ui mq
 
-on_net()   { docker run --rm --network "$NET" "$@"; }
-curl_net() { on_net curlimages/curl:latest -s -m 10 "$@"; }
-code()     { curl_net -o /dev/null -w '%{http_code}' "$@"; }
-hassuper() { curl_net "http://netmaker:8081/api/users/adm/hassuperadmin"; }
-fail()     { echo "FAIL: $*" >&2; exit 1; }
-ok()       { echo "ok: $*"; }
+curl_in() { svc=$1; shift; docker run --rm --network "container:$svc" curlimages/curl:latest -s -m 10 "$@"; }
+code_in() { svc=$1; shift; curl_in "$svc" -o /dev/null -w '%{http_code}' "$@"; }
+hassuper() { curl_in netmaker http://localhost:8081/api/users/adm/hassuperadmin; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
+ok()   { echo "ok: $*"; }
 
 last=000
-for _ in $(seq 1 60); do
-  last=$(code "http://netmaker:8081/api/users/adm/hassuperadmin" || true)
+for _ in $(seq 1 90); do
+  last=$(code_in netmaker http://localhost:8081/api/users/adm/hassuperadmin || true)
   [ "$last" = 200 ] && break
   sleep 2
 done
@@ -66,26 +62,26 @@ if docker compose logs mq 2>&1 | grep -qiE 'read-only file system|error setting 
 fi
 ok "mq started without permission errors"
 
-[ "$(code http://netmaker-ui:80/)" = 200 ]                              || fail "nm-dash -> netmaker-ui:80"
+[ "$(code_in netmaker-ui http://localhost:80/)" = 200 ]                       || fail "nm-dash -> netmaker-ui:80"
 ok "nm-dash -> netmaker-ui:80"
-[ "$(code http://netmaker:8081/api/users/adm/hassuperadmin)" = 200 ]    || fail "nm-api -> netmaker:8081"
+[ "$(code_in netmaker http://localhost:8081/api/users/adm/hassuperadmin)" = 200 ] || fail "nm-api -> netmaker:8081"
 ok "nm-api -> netmaker:8081"
-on_net busybox nc -w 2 mq 8883                                          || fail "nm-broker -> mq:8883"
+docker run --rm --network container:mq busybox nc -w 2 localhost 8883          || fail "nm-broker -> mq:8883"
 ok "nm-broker -> mq:8883"
 
 hassuper | grep -q true && fail "an admin exists before bootstrap"
 
 admin_pass=$(openssl rand -hex 16)
 body='{"username":"admin","user_name":"admin","password":"'"$admin_pass"'"}'
-[ "$(code -X POST -H 'Content-Type: application/json' -d "$body" \
-  http://netmaker:8081/api/users/adm/createsuperadmin)" = 200 ] || fail "createsuperadmin rejected"
+[ "$(code_in netmaker -X POST -H 'Content-Type: application/json' -d "$body" \
+  http://localhost:8081/api/users/adm/createsuperadmin)" = 200 ] || fail "createsuperadmin rejected"
 ok "admin created"
 
 hassuper | grep -q true || fail "hassuperadmin should be true after creation"
 ok "hassuperadmin true"
 
-[ "$(code -X POST -H 'Content-Type: application/json' -d "$body" \
-  http://netmaker:8081/api/users/adm/createsuperadmin)" != 200 ] || fail "second create should be rejected"
+[ "$(code_in netmaker -X POST -H 'Content-Type: application/json' -d "$body" \
+  http://localhost:8081/api/users/adm/createsuperadmin)" != 200 ] || fail "second create should be rejected"
 ok "second create rejected"
 
 echo "ALL E2E CHECKS PASSED"
