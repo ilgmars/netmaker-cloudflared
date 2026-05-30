@@ -29,8 +29,8 @@ sudo chown -R 1883:1883 data/mosquitto
 
 docker run --rm -v "$PWD:/work" "eclipse-mosquitto:${MOSQUITTO_VERSION}" \
   mosquitto_passwd -b -c /work/password.txt "$MQ_USERNAME" "$MQ_PASSWORD"
-sudo chmod 600 password.txt
-sudo chown 1883:1883 password.txt
+sudo chown root:root password.txt
+sudo chmod 640 password.txt
 
 cleanup() {
   docker compose logs --no-color >compose.log 2>&1 || true

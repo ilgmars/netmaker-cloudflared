@@ -218,8 +218,8 @@ mq_ver=$(get_kv MOSQUITTO_VERSION); [ -n "$mq_ver" ] || mq_ver=2.0.20
 echo "Writing password.txt ..."
 $SUDO docker run --rm -v "$PWD:/work" "eclipse-mosquitto:$mq_ver" \
   mosquitto_passwd -b -c /work/password.txt "$mq_user" "$mq_pass"
-$SUDO chmod 600 password.txt
-$SUDO chown 1883:1883 password.txt
+$SUDO chown root:root password.txt
+$SUDO chmod 640 password.txt
 
 $SUDO docker compose up -d
 create_admin
